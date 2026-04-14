@@ -1,6 +1,17 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = 0, keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
+const STORAGE_KEY_COINS = 'carmCombatCoins';
+
+function loadCoins() {
+    const saved = Number(localStorage.getItem(STORAGE_KEY_COINS));
+    return Number.isFinite(saved) ? saved : 0;
+}
+
+function saveCoins() {
+    localStorage.setItem(STORAGE_KEY_COINS, coins);
+}
+
+let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
 
 // ABILITY SYSTEM
 let unlockedAbilities = [];
@@ -26,6 +37,7 @@ window.showSubMenu = function(menuId) {
 function updateCoinDisplays() {
     document.querySelectorAll('.coin-display').forEach(el => el.innerText = coins);
     document.getElementById('coinVal').innerText = coins;
+    saveCoins();
 }
 
 window.buyAbility = function(type) {
@@ -255,3 +267,4 @@ setupJoy('moveJoystick', moveData, 'moveKnob'); setupJoy('aimJoystick', aimData,
 document.getElementById('spellBtn').ontouchstart = (e) => { e.preventDefault(); player.useAbility(); };
 document.getElementById('fireBtn').ontouchstart = (e) => { if(isPaused) return; e.preventDefault(); if(selectedClass==='WARP') player.warp(player.x+Math.cos(player.angle)*300, player.y+Math.sin(player.angle)*300); else isFiring=true; };
 document.getElementById('fireBtn').ontouchend = () => isFiring=false;
+
