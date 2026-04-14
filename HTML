@@ -1,0 +1,138 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carm Combat</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+<div class="scanlines"></div>
+<div id="copyToast">DATA COPIED</div>
+
+<!-- HUD -->
+<div id="gameHud" class="absolute top-5 left-5 pointer-events-none z-10 hidden">
+    <div id="classLabel" class="text-[10px] uppercase font-black neon-text-blue mb-1">PROTO_UNIT</div>
+    <div class="health-bar-container"><div id="hpFill" class="health-bar-fill"></div></div>
+    <div class="mt-2 text-xs font-bold neon-text-pink tracking-widest">CRD // <span id="coinVal">0</span></div>
+
+    <div id="abilityHud" class="mt-2 hidden">
+        <div class="text-[10px] text-white opacity-50 mb-1" id="abilityNameDisplay">NO ABILITY</div>
+        <div class="w-24 h-1 bg-white/20"><div id="abilityCooldownFill" class="h-full bg-blue-400 w-0"></div></div>
+    </div>
+</div>
+
+<div id="pauseBtn" class="absolute top-5 left-1/2 -translate-x-1/2 z-10 hidden cursor-pointer">
+    <div class="btn !min-w-[100px] !py-2 !px-4 text-xs" onclick="togglePause()">PAUSE</div>
+</div>
+
+<div id="waveHud" class="absolute top-5 right-5 text-right pointer-events-none z-10 hidden">
+    <div class="text-3xl font-black italic neon-text-blue">SEC <span id="waveVal">1</span></div>
+</div>
+
+<div id="waveBanner" class="wave-banner">
+    <h2 id="bannerText" class="text-5xl md:text-7xl font-black italic neon-text-blue tracking-tighter">WAVE 1</h2>
+    <p id="bannerSub" class="text-[10px] tracking-[0.5em] text-white opacity-50 uppercase">Initiating</p>
+</div>
+
+<!-- Touch Controls -->
+<div id="touchControls" class="hidden">
+    <div id="moveJoystick" class="joystick-zone"><div id="moveKnob" class="joystick-knob"></div></div>
+    <div class="flex flex-col items-center gap-6">
+        <div id="spellBtn" class="fire-btn !bg-blue-600/50 !border-blue-400 mb-2 !w-14 !h-14">SPELL</div>
+        <div id="fireBtn" class="fire-btn">ACT</div>
+        <div id="aimJoystick" class="joystick-zone"><div id="aimKnob" class="joystick-knob"></div></div>
+    </div>
+</div>
+
+<!-- MAIN MENU -->
+<div id="mainMenu" class="menu-overlay">
+    <h1 class="text-5xl md:text-8xl mb-2 font-black tracking-tighter neon-text-blue italic">CARM COMBAT</h1>
+    <p class="text-[10px] mb-8 tracking-[0.3em] neon-text-pink">SYSTEM STATUS: READY</p>
+    <div class="flex flex-col gap-2">
+        <div class="btn" onclick="showSubMenu('classMenu')">Play</div>
+        <div class="btn btn-pink" onclick="showSubMenu('skinsMenu')">Skins</div>
+        <div class="btn btn-pink" onclick="showSubMenu('abilitiesMenu')">Abilities</div>
+        <div class="btn btn-blue" onclick="showSubMenu('settingsMenu')">Settings</div>
+    </div>
+</div>
+
+<!-- ABILITIES MENU -->
+<div id="abilitiesMenu" class="menu-overlay hidden">
+    <h2 class="text-4xl mb-4 font-black neon-text-pink italic">UPGRADE CORE</h2>
+    <p class="mb-6 text-xs tracking-widest uppercase">Credits Available: <span class="coin-display">0</span></p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 w-full max-w-4xl px-4">
+        <div class="cyber-panel p-4 flex flex-col items-center gap-2" id="ability-fire">
+            <div class="w-12 h-12 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-xl">🔥</div>
+            <h3 class="font-bold">FIRE RING</h3>
+            <p class="text-[10px] opacity-60 text-center">Radial heat wave damage.</p>
+            <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyAbility('FIRE')">1000 CRD</div>
+        </div>
+        <div class="cyber-panel p-4 flex flex-col items-center gap-2" id="ability-water">
+            <div class="w-12 h-12 rounded-full bg-blue-600/30 border border-blue-500 flex items-center justify-center text-xl">💧</div>
+            <h3 class="font-bold">WATER FIELD</h3>
+            <p class="text-[10px] opacity-60 text-center">Slows and drains enemy life.</p>
+            <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyAbility('WATER')">1000 CRD</div>
+        </div>
+        <div class="cyber-panel p-4 flex flex-col items-center gap-2" id="ability-lightning">
+            <div class="w-12 h-12 rounded-full bg-yellow-600/30 border border-yellow-500 flex items-center justify-center text-xl">⚡</div>
+            <h3 class="font-bold">LIGHTNING</h3>
+            <p class="text-[10px] opacity-60 text-center">Chain reaction strikes.</p>
+            <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyAbility('LIGHTNING')">1000 CRD</div>
+        </div>
+    </div>
+    <div class="btn btn-pink" onclick="showSubMenu('mainMenu')">Back</div>
+</div>
+
+<!-- PAUSE MENU -->
+<div id="pauseMenu" class="menu-overlay hidden !bg-black/60 backdrop-blur-md">
+    <h2 class="text-6xl mb-6 font-black neon-text-blue italic">PAUSED</h2>
+    <div class="btn mb-4" onclick="togglePause()">Resume</div>
+    <div class="btn btn-pink" onclick="location.reload()">Quit to Menu</div>
+</div>
+
+<!-- CLASS MENU -->
+<div id="classMenu" class="menu-overlay hidden">
+    <h2 class="text-4xl mb-6 font-black neon-text-blue italic">SELECT UNIT</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8 w-full max-w-3xl px-4">
+        <div class="class-card p-4 text-center cyber-panel selected" onclick="selectClass('GUNMAN', this)">
+            <h3 class="font-black text-lg">GUNMAN</h3>
+        </div>
+        <div class="class-card p-4 text-center cyber-panel" onclick="selectClass('WARP', this)">
+            <h3 class="font-black text-lg">WARP</h3>
+        </div>
+        <div class="class-card p-4 text-center cyber-panel" onclick="selectClass('VANGUARD', this)">
+            <h3 class="font-black text-lg">VANGUARD</h3>
+        </div>
+    </div>
+    <div class="flex gap-4">
+        <div class="btn btn-pink !min-w-[100px]" onclick="showSubMenu('mainMenu')">Back</div>
+        <div class="btn !min-w-[150px]" onclick="startGame()">Initiate</div>
+    </div>
+</div>
+
+<!-- GAME OVER -->
+<div id="gameOver" class="menu-overlay hidden">
+    <h2 class="text-6xl text-red-600 mb-2 font-black italic">DE-SYNC</h2>
+    <div class="text-lg mb-8 font-bold">WAVES CLEARED: <span id="finalWave">0</span></div>
+    <div class="btn" onclick="location.reload()">Reset</div>
+</div>
+
+<div id="skinsMenu" class="menu-overlay hidden">
+    <h2 class="text-4xl mb-6 font-black neon-text-pink italic">SKINS</h2>
+    <div class="btn btn-pink" onclick="showSubMenu('mainMenu')">Back</div>
+</div>
+<div id="settingsMenu" class="menu-overlay hidden">
+    <h2 class="text-4xl mb-6 font-black neon-text-blue italic">SETTINGS</h2>
+    <div class="btn btn-blue" onclick="showSubMenu('mainMenu')">Back</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+<script src="https://cdn.tailwindcss.com"></script>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
