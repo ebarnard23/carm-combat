@@ -251,7 +251,7 @@ function animate() {
 window.onkeydown = e => {
     keys[e.key.toLowerCase()] = true;
     if(e.key.toLowerCase() === 'p' || e.key === 'Escape') togglePause();
-    if(e.code === 'Space') player.useAbility();
+    if(e.code === 'KeyQ') player.useAbility();
 };
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mouse.x = e.clientX; mouse.y = e.clientY; };
