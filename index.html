@@ -52,6 +52,7 @@
         <p class="text-[10px] mb-8 tracking-[0.3em] neon-text-pink">SYSTEM STATUS: READY</p>
         <div class="flex flex-col gap-2">
             <div class="btn" onclick="showSubMenu('classMenu')">Play</div>
+            <div class="btn btn-green" onclick="showSubMenu('upgradeMenu')">Upgrade</div>
             <div class="btn btn-pink" onclick="showSubMenu('skinsMenu')">Skins</div>
             <div class="btn btn-pink" onclick="showSubMenu('abilitiesMenu')">Abilities</div>
             <div class="btn btn-blue" onclick="showSubMenu('settingsMenu')">Settings</div>
@@ -83,6 +84,65 @@
             </div>
         </div>
         <div class="btn btn-pink" onclick="showSubMenu('mainMenu')">Back</div>
+    </div>
+
+    <!-- UPGRADE MENU -->
+    <div id="upgradeMenu" class="menu-overlay hidden">
+        <h2 class="text-4xl mb-4 font-black neon-text-green italic">UPGRADE SYSTEM</h2>
+        <p class="mb-6 text-xs tracking-widest uppercase">Credits Available: <span class="coin-display">0</span></p>
+        
+        <!-- Health Upgrade -->
+        <div class="cyber-panel p-4 mb-4">
+            <h3 class="font-bold text-lg mb-2 neon-text-green">HEALTH UPGRADE</h3>
+            <p class="text-sm mb-2">Increase max health by 5%</p>
+            <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="upgradeHealth()">250 CRD</div>
+        </div>
+        
+        <!-- Abilities Upgrade -->
+        <div class="cyber-panel p-4 mb-4">
+            <h3 class="font-bold text-lg mb-2 neon-text-blue">ABILITIES UPGRADE</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-xl mx-auto mb-2">🔥</div>
+                    <h4 class="font-bold">FIRE</h4>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4 mt-2" onclick="upgradeAbility('fire')">500 CRD</div>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-blue-600/30 border border-blue-500 flex items-center justify-center text-xl mx-auto mb-2">💧</div>
+                    <h4 class="font-bold">WATER</h4>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4 mt-2" onclick="upgradeAbility('water')">500 CRD</div>
+                </div>
+                <div class="text-center">
+                    <div class="w-12 h-12 rounded-full bg-yellow-600/30 border border-yellow-500 flex items-center justify-center text-xl mx-auto mb-2">⚡</div>
+                    <h4 class="font-bold">LIGHTNING</h4>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4 mt-2" onclick="upgradeAbility('lightning')">500 CRD</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Combat Upgrade -->
+        <div class="cyber-panel p-4 mb-4">
+            <h3 class="font-bold text-lg mb-2 neon-text-red">COMBAT UPGRADE</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="text-center">
+                    <h4 class="font-bold">VANGUARD</h4>
+                    <p class="text-xs mb-2">Add another sword (Max: 5)</p>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="upgradeCombat('vanguard')">750 CRD</div>
+                </div>
+                <div class="text-center">
+                    <h4 class="font-bold">GUNMAN</h4>
+                    <p class="text-xs mb-2">Shoot more bullets (Max: 8)</p>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="upgradeCombat('gunman')">750 CRD</div>
+                </div>
+                <div class="text-center">
+                    <h4 class="font-bold">WARP</h4>
+                    <p class="text-xs mb-2">Bigger warp line (Max: 5)</p>
+                    <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="upgradeCombat('warp')">750 CRD</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="btn btn-green" onclick="showSubMenu('mainMenu')">Back</div>
     </div>
 
     <!-- PAUSE MENU -->

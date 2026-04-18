@@ -13,6 +13,33 @@ function saveCoins() {
 
 let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
 
+loadUpgrades();
+
+// Upgrade system
+let healthUpgrades = 0;
+let abilityUpgrades = { fire: 0, water: 0, lightning: 0 };
+let combatUpgrades = { vanguard: 0, gunman: 0, warp: 0 };
+
+function loadUpgrades() {
+    healthUpgrades = Number(localStorage.getItem('carmCombatHealthUpgrades')) || 0;
+    abilityUpgrades.fire = Number(localStorage.getItem('carmCombatAbilityFire')) || 0;
+    abilityUpgrades.water = Number(localStorage.getItem('carmCombatAbilityWater')) || 0;
+    abilityUpgrades.lightning = Number(localStorage.getItem('carmCombatAbilityLightning')) || 0;
+    combatUpgrades.vanguard = Number(localStorage.getItem('carmCombatCombatVanguard')) || 0;
+    combatUpgrades.gunman = Number(localStorage.getItem('carmCombatCombatGunman')) || 0;
+    combatUpgrades.warp = Number(localStorage.getItem('carmCombatCombatWarp')) || 0;
+}
+
+function saveUpgrades() {
+    localStorage.setItem('carmCombatHealthUpgrades', healthUpgrades);
+    localStorage.setItem('carmCombatAbilityFire', abilityUpgrades.fire);
+    localStorage.setItem('carmCombatAbilityWater', abilityUpgrades.water);
+    localStorage.setItem('carmCombatAbilityLightning', abilityUpgrades.lightning);
+    localStorage.setItem('carmCombatCombatVanguard', combatUpgrades.vanguard);
+    localStorage.setItem('carmCombatCombatGunman', combatUpgrades.gunman);
+    localStorage.setItem('carmCombatCombatWarp', combatUpgrades.warp);
+}
+
 // ABILITY SYSTEM
 let unlockedAbilities = [];
 let activeAbility = null;
@@ -34,7 +61,7 @@ const ENEMY_TYPES = [
 ];
 
 window.showSubMenu = function(menuId) {
-    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'abilitiesMenu', 'settingsMenu', 'pauseMenu'];
+    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'abilitiesMenu', 'upgradeMenu', 'settingsMenu', 'pauseMenu'];
     menus.forEach(m => document.getElementById(m)?.classList.add('hidden'));
     document.getElementById(menuId)?.classList.remove('hidden');
     updateCoinDisplays();
@@ -62,6 +89,41 @@ window.buyAbility = function(type) {
     }
 };
 
+window.upgradeHealth = function() {
+    if (coins >= 250) {
+        coins -= 250;
+        healthUpgrades++;
+        saveUpgrades();
+        updateCoinDisplays();
+    }
+};
+
+window.upgradeAbility = function(type) {
+    if (coins >= 500) {
+        coins -= 500;
+        abilityUpgrades[type]++;
+        saveUpgrades();
+        updateCoinDisplays();
+    }
+};
+
+window.upgradeCombat = function(type) {
+    if (coins >= 750) {
+        if (type === 'vanguard' && combatUpgrades.vanguard < 5) {
+            coins -= 750;
+            combatUpgrades.vanguard++;
+        } else if (type === 'gunman' && combatUpgrades.gunman < 8) {
+            coins -= 750;
+            combatUpgrades.gunman++;
+        } else if (type === 'warp' && combatUpgrades.warp < 5) {
+            coins -= 750;
+            combatUpgrades.warp++;
+        }
+        saveUpgrades();
+        updateCoinDisplays();
+    }
+};
+
 window.togglePause = function() {
     if (gameState !== 'PLAYING') return;
     isPaused = !isPaused;
@@ -76,7 +138,9 @@ window.selectClass = function(id, el) {
 
 class Player {
     constructor() {
-        this.x = canvas.width/2; this.y = canvas.height/2; this.radius = 20; this.hp = 300; this.maxHp = 300;
+        this.x = canvas.width/2; this.y = canvas.height/2; this.radius = 20; 
+        this.maxHp = 300 * (1 + healthUpgrades * 0.05);
+        this.hp = this.maxHp;
         this.color = selectedClass === 'WARP' ? '#ff00ff' : (selectedClass === 'VANGUARD' ? '#39ff14' : '#00f3ff');
         this.speed = selectedClass === 'WARP' ? 0 : 5.8; this.attackCooldown = 0; this.angle = 0; this.vx = 0; this.vy = 0;
     }
@@ -115,13 +179,23 @@ class Player {
     }
     bladeCheck() {
         const tx = this.x + Math.cos(this.angle) * 95, ty = this.y + Math.sin(this.angle) * 95;
-        enemies.forEach(e => { if(distToSeg({x:e.x,y:e.y}, {x:this.x,y:this.y}, {x:tx,y:ty}) < e.radius + 10) { e.hp -= 8; shake = 2; } });
+        enemies.forEach(e => { if(distToSeg({x:e.x,y:e.y}, {x:this.x,y:this.y}, {x:tx,y:ty}) < e.radius + 10) { e.hp -= 8 * (1 + combatUpgrades.vanguard); shake = 2; } });
     }
-    attack() { if(this.attackCooldown <= 0) { projectiles.push(new Projectile(this.x, this.y, this.angle, true, this.color)); this.attackCooldown = 8; shake = 1; } }
+    attack() { 
+        if(this.attackCooldown <= 0) { 
+            const bulletCount = 1 + combatUpgrades.gunman;
+            for(let i = 0; i < bulletCount; i++) {
+                const spread = (i - (bulletCount-1)/2) * 0.1; // small spread
+                projectiles.push(new Projectile(this.x, this.y, this.angle + spread, true, this.color)); 
+            }
+            this.attackCooldown = 8; shake = 1; 
+        } 
+    }
     warp(tx, ty) {
         if(isPaused || this.attackCooldown > 0) return; this.attackCooldown = 25;
-        for(let i=0; i<=20; i++){
-            const px = this.x + (tx - this.x)*(i/20), py = this.y + (ty - this.y)*(i/20);
+        const points = 20 + combatUpgrades.warp * 5;
+        for(let i=0; i<=points; i++){
+            const px = this.x + (tx - this.x)*(i/points), py = this.y + (ty - this.y)*(i/points);
             enemies.forEach(e => { if(Math.hypot(e.x-px, e.y-py) < e.radius+25) e.hp -= 50; });
         }
         this.x = tx; this.y = ty; shake = 10; spawnParticles(tx, ty, this.color, 15);
@@ -143,20 +217,23 @@ class Player {
         shake = 15;
 
         if (activeAbility === 'FIRE') {
+            const damage = 500 * (1 + abilityUpgrades.fire);
             spawnParticles(this.x, this.y, '#ff4400', 50);
             enemies.forEach(e => {
-                if(Math.hypot(e.x - this.x, e.y - this.y) < 300) { e.hp -= 500; spawnParticles(e.x, e.y, '#ff4400', 5); }
+                if(Math.hypot(e.x - this.x, e.y - this.y) < 300) { e.hp -= damage; spawnParticles(e.x, e.y, '#ff4400', 5); }
             });
         } else if (activeAbility === 'WATER') {
+            const damage = 300 * (1 + abilityUpgrades.water);
             spawnParticles(this.x, this.y, '#00ffff', 50);
             enemies.forEach(e => {
-                if(Math.hypot(e.x - this.x, e.y - this.y) < 400) { e.speed *= 0.5; e.hp -= 300; }
+                if(Math.hypot(e.x - this.x, e.y - this.y) < 400) { e.speed *= 0.5; e.hp -= damage; }
             });
         } else if (activeAbility === 'LIGHTNING') {
+            const damage = 800 * (1 + abilityUpgrades.lightning);
             enemies.forEach(e => {
                 ctx.beginPath(); ctx.strokeStyle = '#ffff00'; ctx.lineWidth = 3;
                 ctx.moveTo(this.x, this.y); ctx.lineTo(e.x, e.y); ctx.stroke();
-                e.hp -= 800; spawnParticles(e.x, e.y, '#ffff00', 10);
+                e.hp -= damage; spawnParticles(e.x, e.y, '#ffff00', 10);
             });
         }
     }
