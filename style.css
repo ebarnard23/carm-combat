@@ -77,6 +77,9 @@ canvas {
 .btn-blue { border-color: #0077ff; color: #0077ff; }
 .btn-blue:hover { background: #0077ff; color: white; box-shadow: 0 0 30px #0077ff; }
 
+.btn-green { border-color: var(--neon-green); color: var(--neon-green); }
+.btn-green:hover { background: var(--neon-green); color: black; box-shadow: 0 0 30px var(--neon-green); }
+
 .class-card { border: 1px solid rgba(0, 243, 255, 0.3); transition: all 0.3s ease; cursor: pointer; }
 .class-card:hover { border-color: var(--neon-blue); transform: translateY(-5px); background: rgba(0, 243, 255, 0.1); }
 .class-card.selected { border-color: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink); background: rgba(255, 0, 255, 0.05); }
