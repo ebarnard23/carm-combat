@@ -366,4 +366,3 @@ document.getElementById('spellBtn').ontouchstart = (e) => { e.preventDefault(); 
 document.getElementById('dashBtn').ontouchstart = (e) => { e.preventDefault(); if(gameState==='PLAYING' && !isPaused && selectedClass !== 'WARP') isDashTargeting = !isDashTargeting; };
 document.getElementById('fireBtn').ontouchstart = (e) => { if(isPaused) return; e.preventDefault(); if(isDashTargeting) { isDashTargeting = false; const dashDist = aimData.active ? 250 : 250; const dashAngle = aimData.active ? Math.atan2(aimData.dy, aimData.dx) : player.angle; player.dash(player.x + Math.cos(dashAngle) * dashDist, player.y + Math.sin(dashAngle) * dashDist); } else if(selectedClass==='WARP') player.warp(player.x+Math.cos(player.angle)*300, player.y+Math.sin(player.angle)*300); else isFiring=true; };
 document.getElementById('fireBtn').ontouchend = () => isFiring=false;
-
