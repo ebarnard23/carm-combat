@@ -11,10 +11,6 @@ function saveCoins() {
     localStorage.setItem(STORAGE_KEY_COINS, coins);
 }
 
-let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
-
-loadUpgrades();
-
 // Upgrade system
 let healthUpgrades = 0;
 let abilityUpgrades = { fire: 0, water: 0, lightning: 0 };
@@ -39,6 +35,10 @@ function saveUpgrades() {
     localStorage.setItem('carmCombatCombatGunman', combatUpgrades.gunman);
     localStorage.setItem('carmCombatCombatWarp', combatUpgrades.warp);
 }
+
+let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
+
+loadUpgrades();
 
 // ABILITY SYSTEM
 let unlockedAbilities = [];
@@ -296,6 +296,7 @@ window.startGame = function() {
     document.getElementById('gameHud').classList.remove('hidden'); document.getElementById('waveHud').classList.remove('hidden');
     document.getElementById('touchControls').classList.remove('hidden'); document.getElementById('pauseBtn').classList.remove('hidden');
     if(activeAbility) document.getElementById('abilityHud').classList.remove('hidden');
+    canvas.style.display = 'block';
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     player = new Player(); enemies = []; projectiles = []; enemyProjectiles = []; particles = []; wave = 1;
     initWave(); animate();

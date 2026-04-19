@@ -20,8 +20,12 @@ body {
 }
 
 canvas {
-    display: block;
+    display: none;
     background: #020205;
+    z-index: -1;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .scanlines {
