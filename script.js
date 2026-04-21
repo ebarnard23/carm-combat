@@ -52,6 +52,11 @@ let isDashTargeting = false;
 const DASH_COOLDOWN_MAX = 300;
 const DASH_SPEED = 20;
 
+// WARP SYSTEM
+let isWarpTargeting = false;
+let warpTargetX = 0;
+let warpTargetY = 0;
+
 const ENEMY_TYPES = [
     { name: 'Drone', color: '#39ff14', radius: 12, speed: 2.1, hp: 12, damage: 4, hasWeapon: false, reward: 25 },
     { name: 'Inforcer', color: '#ff00ff', radius: 20, speed: 1.1, hp: 45, damage: 8, hasWeapon: true, reward: 50 },
@@ -156,6 +161,13 @@ class Player {
         if(isPaused) return;
         if(aimData.active) this.angle = Math.atan2(aimData.dy, aimData.dx);
         else this.angle = Math.atan2(mouse.y - this.y, mouse.x - this.x);
+        
+        // Update warp targeting position
+        if(isWarpTargeting && selectedClass === 'WARP') {
+            warpTargetX = mouse.x;
+            warpTargetY = mouse.y;
+        }
+        
         if (selectedClass !== 'WARP') {
             let ax = moveData.active ? moveData.dx : (keys['d']?1:0) - (keys['a']?1:0);
             let ay = moveData.active ? moveData.dy : (keys['s']?1:0) - (keys['w']?1:0);
@@ -192,12 +204,25 @@ class Player {
         } 
     }
     warp(tx, ty) {
-        if(isPaused || this.attackCooldown > 0) return; this.attackCooldown = 25;
+        if(isPaused || this.attackCooldown > 0) return; 
+        this.attackCooldown = 25;
+        const warpRadius = 50 + combatUpgrades.warp * 30;
+        const baseDamage = 50 * (1 + combatUpgrades.warp * 0.5);
+        
+        // Damage along the warp path
         const points = 20 + combatUpgrades.warp * 5;
         for(let i=0; i<=points; i++){
             const px = this.x + (tx - this.x)*(i/points), py = this.y + (ty - this.y)*(i/points);
-            enemies.forEach(e => { if(Math.hypot(e.x-px, e.y-py) < e.radius+25) e.hp -= 50; });
+            enemies.forEach(e => { if(Math.hypot(e.x-px, e.y-py) < e.radius+25) e.hp -= baseDamage; });
         }
+        
+        // Damage at destination area
+        enemies.forEach(e => {
+            if(Math.hypot(e.x - tx, e.y - ty) < warpRadius + e.radius) { 
+                e.hp -= baseDamage * 1.5;
+            }
+        });
+        
         this.x = tx; this.y = ty; shake = 10; spawnParticles(tx, ty, this.color, 15);
     }
     dash(tx, ty) {
@@ -342,6 +367,28 @@ function animate() {
     });
 
     particles.forEach((p, i) => { if(!isPaused) { p.x+=p.vx; p.y+=p.vy; p.a-=0.02; } ctx.globalAlpha=p.a; ctx.fillStyle=p.c; ctx.fillRect(p.x,p.y,4,4); if(p.a<=0) particles.splice(i,1); });
+    
+    // Draw warp targeting indicator
+    if(isWarpTargeting && selectedClass === 'WARP' && gameState === 'PLAYING') {
+        const warpRadius = 50 + combatUpgrades.warp * 30;
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#ff00ff';
+        ctx.beginPath();
+        ctx.arc(warpTargetX, warpTargetY, warpRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+        
+        // Draw size indicator
+        ctx.fillStyle = '#ff00ff';
+        ctx.font = 'bold 14px Orbitron';
+        ctx.textAlign = 'center';
+        ctx.fillText(`SIZE: ${Math.floor(warpRadius)} px`, warpTargetX, warpTargetY - warpRadius - 15);
+    }
+    
     ctx.globalAlpha=1; if(waveActive && enemies.length === 0 && !isPaused) { waveActive=false; setTimeout(() => { if(!isPaused) { wave++; initWave(); } }, 1000); }
 }
 
@@ -353,8 +400,25 @@ window.onkeydown = e => {
 };
 window.onkeyup = e => keys[e.key.toLowerCase()] = false;
 window.onmousemove = e => { mouse.x = e.clientX; mouse.y = e.clientY; };
-window.onmousedown = e => { if(gameState==='PLAYING' && !isPaused) { if(isDashTargeting) { isDashTargeting = false; player.dash(e.clientX, e.clientY); } else if(selectedClass==='WARP') player.warp(e.clientX, e.clientY); else isFiring=true; } };
-window.onmouseup = () => isFiring = false;
+window.onmousedown = e => { 
+    if(gameState==='PLAYING' && !isPaused) { 
+        if(isDashTargeting) { 
+            isDashTargeting = false; 
+            player.dash(e.clientX, e.clientY); 
+        } else if(selectedClass==='WARP') { 
+            isWarpTargeting = true;
+        } else { 
+            isFiring=true; 
+        } 
+    } 
+};
+window.onmouseup = () => { 
+    if(isWarpTargeting && selectedClass === 'WARP') {
+        isWarpTargeting = false;
+        player.warp(warpTargetX, warpTargetY);
+    }
+    isFiring = false; 
+};
 
 function setupJoy(id, dat, kId) {
     const z = document.getElementById(id), k = document.getElementById(kId); if(!z) return;
@@ -364,6 +428,25 @@ function setupJoy(id, dat, kId) {
 setupJoy('moveJoystick', moveData, 'moveKnob'); setupJoy('aimJoystick', aimData, 'aimKnob');
 document.getElementById('spellBtn').ontouchstart = (e) => { e.preventDefault(); player.useAbility(); };
 document.getElementById('dashBtn').ontouchstart = (e) => { e.preventDefault(); if(gameState==='PLAYING' && !isPaused && selectedClass !== 'WARP') isDashTargeting = !isDashTargeting; };
-document.getElementById('fireBtn').ontouchstart = (e) => { if(isPaused) return; e.preventDefault(); if(isDashTargeting) { isDashTargeting = false; const dashDist = aimData.active ? 250 : 250; const dashAngle = aimData.active ? Math.atan2(aimData.dy, aimData.dx) : player.angle; player.dash(player.x + Math.cos(dashAngle) * dashDist, player.y + Math.sin(dashAngle) * dashDist); } else if(selectedClass==='WARP') player.warp(player.x+Math.cos(player.angle)*300, player.y+Math.sin(player.angle)*300); else isFiring=true; };
-document.getElementById('fireBtn').ontouchend = () => isFiring=false;
+document.getElementById('fireBtn').ontouchstart = (e) => { 
+    if(isPaused) return; 
+    e.preventDefault(); 
+    if(isDashTargeting) { 
+        isDashTargeting = false; 
+        const dashDist = aimData.active ? 250 : 250; 
+        const dashAngle = aimData.active ? Math.atan2(aimData.dy, aimData.dx) : player.angle; 
+        player.dash(player.x + Math.cos(dashAngle) * dashDist, player.y + Math.sin(dashAngle) * dashDist); 
+    } else if(selectedClass==='WARP') { 
+        isWarpTargeting = true;
+    } else { 
+        isFiring=true; 
+    }
+};
+document.getElementById('fireBtn').ontouchend = () => { 
+    if(isWarpTargeting && selectedClass === 'WARP') {
+        isWarpTargeting = false;
+        player.warp(player.x+Math.cos(player.angle)*300, player.y+Math.sin(player.angle)*300);
+    }
+    isFiring=false; 
+};
 

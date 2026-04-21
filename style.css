@@ -101,5 +101,6 @@ canvas {
 .neon-text-blue { color: var(--neon-blue); text-shadow: 0 0 10px var(--neon-blue); }
 .neon-text-pink { color: var(--neon-pink); text-shadow: 0 0 10px var(--neon-pink); }
 .neon-text-red { color: var(--neon-red); text-shadow: 0 0 10px var(--neon-red); }
+.neon-text-green { color: var(--neon-green); text-shadow: 0 0 10px var(--neon-green); }
 
 #copyToast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--neon-green); color: black; padding: 8px 16px; font-weight: bold; border-radius: 4px; z-index: 200; opacity: 0; transition: opacity 0.3s; pointer-events: none; font-size: 12px; }
