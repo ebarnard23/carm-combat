@@ -428,7 +428,6 @@ function setupJoy(id, dat, kId) {
 setupJoy('moveJoystick', moveData, 'moveKnob'); setupJoy('aimJoystick', aimData, 'aimKnob');
 document.getElementById('spellBtn').ontouchstart = (e) => { e.preventDefault(); player.useAbility(); };
 document.getElementById('dashBtn').ontouchstart = (e) => { e.preventDefault(); if(gameState==='PLAYING' && !isPaused && selectedClass !== 'WARP') isDashTargeting = !isDashTargeting; };
-<<<<<<< HEAD
 document.getElementById('fireBtn').ontouchstart = (e) => { 
     if(isPaused) return; 
     e.preventDefault(); 
@@ -450,8 +449,3 @@ document.getElementById('fireBtn').ontouchend = () => {
     }
     isFiring=false; 
 };
-
-=======
-document.getElementById('fireBtn').ontouchstart = (e) => { if(isPaused) return; e.preventDefault(); if(isDashTargeting) { isDashTargeting = false; const dashDist = aimData.active ? 250 : 250; const dashAngle = aimData.active ? Math.atan2(aimData.dy, aimData.dx) : player.angle; player.dash(player.x + Math.cos(dashAngle) * dashDist, player.y + Math.sin(dashAngle) * dashDist); } else if(selectedClass==='WARP') player.warp(player.x+Math.cos(player.angle)*300, player.y+Math.sin(player.angle)*300); else isFiring=true; };
-document.getElementById('fireBtn').ontouchend = () => isFiring=false;
->>>>>>> 0f77628e11c3760ee64ed8dbc90f56e300a2fb7d
