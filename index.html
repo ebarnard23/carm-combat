@@ -180,8 +180,79 @@
     </div>
 
     <div id="skinsMenu" class="menu-overlay hidden">
+        <div class="absolute top-4 left-4">
+            <div class="btn btn-pink !py-1 !px-3 text-xs" onclick="showSubMenu('mainMenu')">LEAVE</div>
+        </div>
         <h2 class="text-4xl mb-6 font-black neon-text-pink italic">SKINS</h2>
-        <div class="btn btn-pink" onclick="showSubMenu('mainMenu')">Back</div>
+        <div class="flex flex-col gap-4">
+            <div class="btn btn-green" onclick="showSubMenu('clothesMenu')">Clothes</div>
+            <div class="btn btn-blue" onclick="showSubMenu('auraMenu')">Aura</div>
+        </div>
+        <div class="btn btn-pink mt-8" onclick="showSubMenu('mainMenu')">Back</div>
+    </div>
+
+    <!-- CLOTHES MENU -->
+    <div id="clothesMenu" class="menu-overlay hidden">
+        <div class="absolute top-4 left-4">
+            <div class="btn btn-pink !py-1 !px-3 text-xs" onclick="showSubMenu('skinsMenu')">BACK</div>
+        </div>
+        <h2 class="text-4xl mb-4 font-black neon-text-green italic">CLOTHES SHOP</h2>
+        <p class="mb-6 text-xs tracking-widest uppercase">Credits Available: <span class="coin-display">0</span></p>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 w-full max-w-6xl px-4">
+            <!-- Common -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-gray-600/30 border border-gray-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-gray-400">Common Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+10 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('common')">100 CRD</div>
+            </div>
+            <!-- Uncommon -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-green-600/30 border border-green-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-green-400">Uncommon Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+20 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('uncommon')">250 CRD</div>
+            </div>
+            <!-- Rare -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-blue-600/30 border border-blue-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-blue-400">Rare Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+35 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('rare')">500 CRD</div>
+            </div>
+            <!-- Epic -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-purple-600/30 border border-purple-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-purple-400">Epic Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+50 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('epic')">1000 CRD</div>
+            </div>
+            <!-- Legendary -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-orange-600/30 border border-orange-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-orange-400">Legendary Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+75 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('legendary')">2000 CRD</div>
+            </div>
+            <!-- Mythic -->
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full bg-red-600/30 border border-red-500 flex items-center justify-center text-2xl">🛡️</div>
+                <h3 class="font-bold text-red-400">Mythic Armor</h3>
+                <p class="text-[10px] opacity-60 text-center">+100 Health</p>
+                <div class="btn !py-1 !text-xs !min-w-0 px-4" onclick="buyClothes('mythic')">5000 CRD</div>
+            </div>
+        </div>
+        <div class="btn btn-green" onclick="showSubMenu('skinsMenu')">Back to Skins</div>
+    </div>
+
+    <!-- AURA MENU -->
+    <div id="auraMenu" class="menu-overlay hidden">
+        <div class="absolute top-4 left-4">
+            <div class="btn btn-pink !py-1 !px-3 text-xs" onclick="showSubMenu('skinsMenu')">BACK</div>
+        </div>
+        <h2 class="text-4xl mb-6 font-black neon-text-blue italic">AURA</h2>
+        <p class="text-center text-sm opacity-60">Aura options coming soon...</p>
+        <div class="btn btn-blue mt-8" onclick="showSubMenu('skinsMenu')">Back to Skins</div>
     </div>
     <div id="settingsMenu" class="menu-overlay hidden">
         <h2 class="text-4xl mb-6 font-black neon-text-blue italic">SETTINGS</h2>

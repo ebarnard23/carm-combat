@@ -15,6 +15,8 @@ function saveCoins() {
 let healthUpgrades = 0;
 let abilityUpgrades = { fire: 0, water: 0, lightning: 0 };
 let combatUpgrades = { vanguard: 0, gunman: 0, warp: 0 };
+let ownedClothes = { common: false, uncommon: false, rare: false, epic: false, legendary: false, mythic: false };
+let equippedClothes = null;
 
 function loadUpgrades() {
     healthUpgrades = Number(localStorage.getItem('carmCombatHealthUpgrades')) || 0;
@@ -24,6 +26,13 @@ function loadUpgrades() {
     combatUpgrades.vanguard = Number(localStorage.getItem('carmCombatCombatVanguard')) || 0;
     combatUpgrades.gunman = Number(localStorage.getItem('carmCombatCombatGunman')) || 0;
     combatUpgrades.warp = Number(localStorage.getItem('carmCombatCombatWarp')) || 0;
+    ownedClothes.common = localStorage.getItem('carmCombatClothesCommon') === 'true';
+    ownedClothes.uncommon = localStorage.getItem('carmCombatClothesUncommon') === 'true';
+    ownedClothes.rare = localStorage.getItem('carmCombatClothesRare') === 'true';
+    ownedClothes.epic = localStorage.getItem('carmCombatClothesEpic') === 'true';
+    ownedClothes.legendary = localStorage.getItem('carmCombatClothesLegendary') === 'true';
+    ownedClothes.mythic = localStorage.getItem('carmCombatClothesMythic') === 'true';
+    equippedClothes = localStorage.getItem('carmCombatEquippedClothes') || null;
 }
 
 function saveUpgrades() {
@@ -34,6 +43,13 @@ function saveUpgrades() {
     localStorage.setItem('carmCombatCombatVanguard', combatUpgrades.vanguard);
     localStorage.setItem('carmCombatCombatGunman', combatUpgrades.gunman);
     localStorage.setItem('carmCombatCombatWarp', combatUpgrades.warp);
+    localStorage.setItem('carmCombatClothesCommon', ownedClothes.common);
+    localStorage.setItem('carmCombatClothesUncommon', ownedClothes.uncommon);
+    localStorage.setItem('carmCombatClothesRare', ownedClothes.rare);
+    localStorage.setItem('carmCombatClothesEpic', ownedClothes.epic);
+    localStorage.setItem('carmCombatClothesLegendary', ownedClothes.legendary);
+    localStorage.setItem('carmCombatClothesMythic', ownedClothes.mythic);
+    localStorage.setItem('carmCombatEquippedClothes', equippedClothes);
 }
 
 let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
@@ -66,7 +82,7 @@ const ENEMY_TYPES = [
 ];
 
 window.showSubMenu = function(menuId) {
-    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'abilitiesMenu', 'upgradeMenu', 'settingsMenu', 'pauseMenu'];
+    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'clothesMenu', 'auraMenu', 'abilitiesMenu', 'upgradeMenu', 'settingsMenu', 'pauseMenu'];
     menus.forEach(m => document.getElementById(m)?.classList.add('hidden'));
     document.getElementById(menuId)?.classList.remove('hidden');
     updateCoinDisplays();
@@ -91,6 +107,33 @@ window.buyAbility = function(type) {
     } else if (unlockedAbilities.includes(type)) {
         activeAbility = type;
         document.getElementById('abilityNameDisplay').innerText = type + " READY";
+    }
+};
+
+const clothesData = {
+    common: { price: 100, health: 10, color: '#808080' },
+    uncommon: { price: 250, health: 20, color: '#00ff00' },
+    rare: { price: 500, health: 35, color: '#0080ff' },
+    epic: { price: 1000, health: 50, color: '#8000ff' },
+    legendary: { price: 2000, health: 75, color: '#ff8000' },
+    mythic: { price: 5000, health: 100, color: '#ff0000' }
+};
+
+window.buyClothes = function(rarity) {
+    const data = clothesData[rarity];
+    if (coins >= data.price && !ownedClothes[rarity]) {
+        coins -= data.price;
+        ownedClothes[rarity] = true;
+        equippedClothes = rarity;
+        updateCoinDisplays();
+        saveUpgrades();
+        alert(`Bought ${rarity} armor! +${data.health} Health`);
+    } else if (ownedClothes[rarity]) {
+        equippedClothes = rarity;
+        saveUpgrades();
+        alert(`Equipped ${rarity} armor!`);
+    } else {
+        alert('Not enough credits!');
     }
 };
 
@@ -144,14 +187,16 @@ window.selectClass = function(id, el) {
 class Player {
     constructor() {
         this.x = canvas.width/2; this.y = canvas.height/2; this.radius = 20; 
-        this.maxHp = 300 * (1 + healthUpgrades * 0.05);
+        let armorBonus = equippedClothes ? clothesData[equippedClothes].health : 0;
+        this.maxHp = (300 + armorBonus) * (1 + healthUpgrades * 0.05);
         this.hp = this.maxHp;
         this.color = selectedClass === 'WARP' ? '#ff00ff' : (selectedClass === 'VANGUARD' ? '#39ff14' : '#00f3ff');
+        this.armorColor = equippedClothes ? clothesData[equippedClothes].color : this.color;
         this.speed = selectedClass === 'WARP' ? 0 : 5.8; this.attackCooldown = 0; this.angle = 0; this.vx = 0; this.vy = 0;
     }
     draw() {
         ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.angle);
-        ctx.shadowBlur = 15; ctx.shadowColor = this.color; ctx.strokeStyle = this.color; ctx.lineWidth = 3;
+        ctx.shadowBlur = 15; ctx.shadowColor = this.armorColor; ctx.strokeStyle = this.color; ctx.lineWidth = 3;
         ctx.strokeRect(-15, -15, 30, 30); ctx.fillStyle = '#0a0a0a'; ctx.fillRect(-15, -15, 30, 30);
         if (selectedClass === 'GUNMAN') { ctx.fillStyle = this.color; ctx.fillRect(15, -5, 12, 10); }
         else if (selectedClass === 'VANGUARD') { ctx.fillStyle = 'rgba(57, 255, 20, 0.3)'; ctx.fillRect(15, -10, 80, 20); ctx.strokeStyle = '#39ff14'; ctx.strokeRect(15, -10, 80, 20); }
