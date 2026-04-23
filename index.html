@@ -20,6 +20,10 @@
             <div class="text-[10px] text-white opacity-50 mb-1" id="abilityNameDisplay">NO ABILITY</div>
             <div class="w-24 h-1 bg-white/20"><div id="abilityCooldownFill" class="h-full bg-blue-400 w-0"></div></div>
         </div>
+        <div id="auraHud" class="mt-2 hidden pointer-events-auto">
+            <div class="btn !py-1 !px-3 !text-xs !min-w-0" onclick="activateAura()" id="auraButton">AURA</div>
+            <div class="text-[10px] opacity-60 mt-1" id="auraCooldownText">AURA READY</div>
+        </div>
     </div>
 
     <div id="pauseBtn" class="absolute top-5 left-1/2 -translate-x-1/2 z-10 hidden cursor-pointer">
@@ -55,6 +59,7 @@
             <div class="btn btn-green" onclick="showSubMenu('upgradeMenu')">Upgrade</div>
             <div class="btn btn-pink" onclick="showSubMenu('skinsMenu')">Skins</div>
             <div class="btn btn-pink" onclick="showSubMenu('abilitiesMenu')">Abilities</div>
+            <div class="btn btn-blue" onclick="showSubMenu('inventoryMenu')">Inventory</div>
             <div class="btn btn-blue" onclick="showSubMenu('settingsMenu')">Settings</div>
         </div>
     </div>
@@ -250,10 +255,58 @@
         <div class="absolute top-4 left-4">
             <div class="btn btn-pink !py-1 !px-3 text-xs" onclick="showSubMenu('skinsMenu')">BACK</div>
         </div>
-        <h2 class="text-4xl mb-6 font-black neon-text-blue italic">AURA</h2>
-        <p class="text-center text-sm opacity-60">Aura options coming soon...</p>
-        <div class="btn btn-blue mt-8" onclick="showSubMenu('skinsMenu')">Back to Skins</div>
+        <h2 class="text-4xl mb-4 font-black neon-text-blue italic">AURA</h2>
+        <p class="mb-4 text-xs uppercase tracking-widest opacity-60">Boss Chest Count: <span id="chestCount">0</span></p>
+        <div class="flex flex-col gap-3 mb-6 w-full max-w-3xl px-4">
+            <div class="btn btn-green" onclick="openAuraChest()">Open Boss Chest</div>
+            <div class="text-sm opacity-70">Bosses drop chests. Open them here in the aura place to unlock aura powers.</div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 w-full max-w-6xl px-4">
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-cyan-600/30 border border-cyan-500 flex items-center justify-center text-xl">✨</div>
+                <h3 class="font-bold">Moving Aura</h3>
+                <p class="text-[10px] opacity-60 text-center">Slash from your position toward the mouse.</p>
+                <div id="auraMovingBtn" class="btn !py-1 !text-xs !min-w-0 px-4" onclick="equipAura('moving')">Equip</div>
+            </div>
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-lime-600/30 border border-lime-500 flex items-center justify-center text-xl">🛡️</div>
+                <h3 class="font-bold">Armor Aura</h3>
+                <p class="text-[10px] opacity-60 text-center">Enemies near you take damage automatically.</p>
+                <div id="auraArmorBtn" class="btn !py-1 !text-xs !min-w-0 px-4" onclick="equipAura('armor')">Equip</div>
+            </div>
+            <div class="cyber-panel p-4 flex flex-col items-center gap-2">
+                <div class="w-12 h-12 rounded-full bg-yellow-600/30 border border-yellow-500 flex items-center justify-center text-xl">🎯</div>
+                <h3 class="font-bold">Aim Bot Aura</h3>
+                <p class="text-[10px] opacity-60 text-center">Launch an aura orb every 2 seconds to knock enemies back.</p>
+                <div id="auraAimbotBtn" class="btn !py-1 !text-xs !min-w-0 px-4" onclick="equipAura('aimbot')">Equip</div>
+            </div>
+        </div>
+        <div class="btn btn-blue mt-4" onclick="showSubMenu('skinsMenu')">Back to Skins</div>
     </div>
+
+    <!-- INVENTORY MENU -->
+    <div id="inventoryMenu" class="menu-overlay hidden">
+        <div class="absolute top-4 left-4">
+            <div class="btn btn-pink !py-1 !px-3 text-xs" onclick="showSubMenu('mainMenu')">BACK</div>
+        </div>
+        <h2 class="text-4xl mb-6 font-black neon-text-purple italic">INVENTORY</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-6xl px-4">
+            <div class="cyber-panel p-4">
+                <h3 class="font-bold mb-2">Abilities</h3>
+                <div id="inventoryAbilities" class="space-y-3"></div>
+            </div>
+            <div class="cyber-panel p-4">
+                <h3 class="font-bold mb-2">Clothes</h3>
+                <div id="inventoryClothes" class="space-y-3"></div>
+            </div>
+        </div>
+        <div class="cyber-panel p-4 mt-4">
+            <h3 class="font-bold mb-2">Aura</h3>
+            <div id="inventoryAura" class="space-y-3"></div>
+        </div>
+        <div class="btn btn-blue mt-6" onclick="showSubMenu('mainMenu')">Back</div>
+    </div>
+
     <div id="settingsMenu" class="menu-overlay hidden">
         <h2 class="text-4xl mb-6 font-black neon-text-blue italic">SETTINGS</h2>
         <div class="btn btn-blue" onclick="showSubMenu('mainMenu')">Back</div>

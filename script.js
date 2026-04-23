@@ -17,6 +17,11 @@ let abilityUpgrades = { fire: 0, water: 0, lightning: 0 };
 let combatUpgrades = { vanguard: 0, gunman: 0, warp: 0 };
 let ownedClothes = { common: false, uncommon: false, rare: false, epic: false, legendary: false, mythic: false };
 let equippedClothes = null;
+let availableAuraChests = 0;
+let ownedAuras = { moving: false, armor: false, aimbot: false };
+let equippedAura = null;
+let auraCooldown = 0;
+let movingAuraActive = 0;
 
 function loadUpgrades() {
     healthUpgrades = Number(localStorage.getItem('carmCombatHealthUpgrades')) || 0;
@@ -26,6 +31,8 @@ function loadUpgrades() {
     combatUpgrades.vanguard = Number(localStorage.getItem('carmCombatCombatVanguard')) || 0;
     combatUpgrades.gunman = Number(localStorage.getItem('carmCombatCombatGunman')) || 0;
     combatUpgrades.warp = Number(localStorage.getItem('carmCombatCombatWarp')) || 0;
+    unlockedAbilities = JSON.parse(localStorage.getItem('carmCombatUnlockedAbilities') || '[]');
+    activeAbility = localStorage.getItem('carmCombatActiveAbility') || null;
     ownedClothes.common = localStorage.getItem('carmCombatClothesCommon') === 'true';
     ownedClothes.uncommon = localStorage.getItem('carmCombatClothesUncommon') === 'true';
     ownedClothes.rare = localStorage.getItem('carmCombatClothesRare') === 'true';
@@ -33,6 +40,11 @@ function loadUpgrades() {
     ownedClothes.legendary = localStorage.getItem('carmCombatClothesLegendary') === 'true';
     ownedClothes.mythic = localStorage.getItem('carmCombatClothesMythic') === 'true';
     equippedClothes = localStorage.getItem('carmCombatEquippedClothes') || null;
+    availableAuraChests = Number(localStorage.getItem('carmCombatAuraChests')) || 0;
+    ownedAuras.moving = localStorage.getItem('carmCombatAuraMoving') === 'true';
+    ownedAuras.armor = localStorage.getItem('carmCombatAuraArmor') === 'true';
+    ownedAuras.aimbot = localStorage.getItem('carmCombatAuraAimbot') === 'true';
+    equippedAura = localStorage.getItem('carmCombatEquippedAura') || null;
 }
 
 function saveUpgrades() {
@@ -50,17 +62,181 @@ function saveUpgrades() {
     localStorage.setItem('carmCombatClothesLegendary', ownedClothes.legendary);
     localStorage.setItem('carmCombatClothesMythic', ownedClothes.mythic);
     localStorage.setItem('carmCombatEquippedClothes', equippedClothes);
+    localStorage.setItem('carmCombatUnlockedAbilities', JSON.stringify(unlockedAbilities));
+    localStorage.setItem('carmCombatActiveAbility', activeAbility);
+    localStorage.setItem('carmCombatAuraChests', availableAuraChests);
+    localStorage.setItem('carmCombatAuraMoving', ownedAuras.moving);
+    localStorage.setItem('carmCombatAuraArmor', ownedAuras.armor);
+    localStorage.setItem('carmCombatAuraAimbot', ownedAuras.aimbot);
+    localStorage.setItem('carmCombatEquippedAura', equippedAura);
 }
 
 let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
-
-loadUpgrades();
-
-// ABILITY SYSTEM
 let unlockedAbilities = [];
 let activeAbility = null;
 let abilityCooldown = 0;
 const ABILITY_COOLDOWN_MAX = 600;
+
+loadUpgrades();
+
+const auraData = {
+    moving: { name: 'Moving Aura', text: 'Slash from player to mouse.' },
+    armor: { name: 'Armor Aura', text: 'Damage enemies near you automatically.' },
+    aimbot: { name: 'Aim Bot Aura', text: 'Launch an aura orb every 2 seconds.' }
+};
+
+function getHumanAuraName(type) {
+    return auraData[type] ? auraData[type].name : type;
+}
+
+function updateAuraMenu() {
+    document.getElementById('chestCount').innerText = availableAuraChests;
+    ['moving', 'armor', 'aimbot'].forEach(type => {
+        const btn = document.getElementById(`aura${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+        if (!btn) return;
+        btn.classList.remove('opacity-40');
+        if (equippedAura === type) {
+            btn.innerText = 'Equipped';
+            btn.classList.add('btn-green');
+            btn.classList.remove('btn-pink');
+        } else if (ownedAuras[type]) {
+            btn.innerText = 'Equip';
+            btn.classList.remove('btn-green');
+            btn.classList.add('btn-pink');
+        } else {
+            btn.innerText = 'Locked';
+            btn.classList.remove('btn-green');
+            btn.classList.remove('btn-pink');
+            btn.classList.add('opacity-40');
+        }
+    });
+}
+
+function populateInventory() {
+    const abilitiesEl = document.getElementById('inventoryAbilities');
+    const clothesEl = document.getElementById('inventoryClothes');
+    const auraEl = document.getElementById('inventoryAura');
+
+    abilitiesEl.innerHTML = '';
+    ['FIRE','WATER','LIGHTNING'].forEach(type => {
+        const unlocked = unlockedAbilities.includes(type);
+        abilitiesEl.insertAdjacentHTML('beforeend', `
+            <div class="flex items-center justify-between gap-2 p-3 bg-white/5 rounded border border-white/10">
+                <div>
+                    <div class="font-bold">${type}</div>
+                    <div class="text-[10px] opacity-60">${unlocked ? 'Unlocked' : 'Locked'}</div>
+                </div>
+                <button class="btn !py-1 !px-3 !text-xs" onclick="equipAbility('${type}')">${activeAbility===type ? 'Equipped' : (unlocked ? 'Equip' : 'Locked')}</button>
+            </div>
+        `);
+    });
+
+    clothesEl.innerHTML = '';
+    Object.keys(ownedClothes).forEach(rarity => {
+        const owned = ownedClothes[rarity];
+        clothesEl.insertAdjacentHTML('beforeend', `
+            <div class="flex items-center justify-between gap-2 p-3 bg-white/5 rounded border border-white/10">
+                <div>
+                    <div class="font-bold">${rarity.charAt(0).toUpperCase() + rarity.slice(1)} Armor</div>
+                    <div class="text-[10px] opacity-60">${owned ? 'Owned' : 'Buy to equip'}</div>
+                </div>
+                <button class="btn !py-1 !px-3 !text-xs" onclick="buyClothes('${rarity}')">${equippedClothes===rarity ? 'Equipped' : (owned ? 'Equip' : 'Buy')}</button>
+            </div>
+        `);
+    });
+
+    auraEl.innerHTML = '';
+    ['moving', 'armor', 'aimbot'].forEach(type => {
+        const owned = ownedAuras[type];
+        auraEl.insertAdjacentHTML('beforeend', `
+            <div class="flex items-center justify-between gap-2 p-3 bg-white/5 rounded border border-white/10">
+                <div>
+                    <div class="font-bold">${getHumanAuraName(type)}</div>
+                    <div class="text-[10px] opacity-60">${owned ? 'Unlocked' : 'Locked'}</div>
+                </div>
+                <button class="btn !py-1 !px-3 !text-xs" onclick="equipAura('${type}')">${equippedAura===type ? 'Equipped' : (owned ? 'Equip' : 'Locked')}</button>
+            </div>
+        `);
+    });
+}
+
+function openAuraChest() {
+    if (availableAuraChests <= 0) {
+        return alert('No boss chests available. Defeat a boss first to earn one.');
+    }
+    availableAuraChests--;
+    const available = ['moving', 'armor', 'aimbot'].filter(type => !ownedAuras[type]);
+    const rewardType = available.length ? available[Math.floor(Math.random() * available.length)] : ['moving', 'armor', 'aimbot'][Math.floor(Math.random() * 3)];
+    ownedAuras[rewardType] = true;
+    equippedAura = rewardType;
+    saveUpgrades();
+    updateAuraMenu();
+    alert(`Opened a chest and unlocked ${getHumanAuraName(rewardType)}! It is now equipped.`);
+}
+
+function equipAura(type) {
+    if (!ownedAuras[type]) {
+        return alert('This aura is locked. Open more boss chests first.');
+    }
+    equippedAura = type;
+    saveUpgrades();
+    updateAuraMenu();
+    alert(`Equipped ${getHumanAuraName(type)}.`);
+}
+
+function equipAbility(type) {
+    if (!unlockedAbilities.includes(type)) {
+        return alert('You must unlock this ability before equipping it.');
+    }
+    activeAbility = type;
+    saveUpgrades();
+    alert(`${type} ability equipped.`);
+}
+
+function updateAuraCooldownDisplay() {
+    const text = document.getElementById('auraCooldownText');
+    if (!equippedAura) {
+        text.innerText = 'No aura equipped';
+    } else if (auraCooldown > 0) {
+        text.innerText = `Ready in ${(auraCooldown/60).toFixed(1)}s`;
+    } else {
+        text.innerText = `${getHumanAuraName(equippedAura)} ready`;
+    }
+}
+
+function activateAura() {
+    if (!equippedAura) {
+        return alert('No aura equipped. Equip one in Inventory or Aura menu.');
+    }
+    if (equippedAura === 'armor') {
+        if (auraCooldown > 0) {
+            return alert(`Armor aura is passive and ready.`);
+        }
+        alert('Armor aura is passive. It will damage nearby enemies automatically.');
+        return;
+    }
+    if (auraCooldown > 0) {
+        return alert(`Aura is cooling down for ${(auraCooldown/60).toFixed(1)}s.`);
+    }
+    if (equippedAura === 'moving') {
+        movingAuraActive = 14;
+        const target = { x: mouse.x, y: mouse.y };
+        enemies.forEach(e => {
+            if (distToSeg({ x: e.x, y: e.y }, { x: player.x, y: player.y }, target) < e.radius + 10) {
+                e.hp -= 35;
+                spawnParticles(e.x, e.y, '#00ffff', 8);
+            }
+        });
+        auraCooldown = 120;
+        updateAuraCooldownDisplay();
+    } else if (equippedAura === 'aimbot') {
+        const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
+        projectiles.push(new Projectile(player.x, player.y, angle, true, '#ffff80'));
+        auraCooldown = 120;
+        updateAuraCooldownDisplay();
+    }
+}
+
 
 // DASH SYSTEM
 let dashCooldown = 0;
@@ -82,9 +258,11 @@ const ENEMY_TYPES = [
 ];
 
 window.showSubMenu = function(menuId) {
-    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'clothesMenu', 'auraMenu', 'abilitiesMenu', 'upgradeMenu', 'settingsMenu', 'pauseMenu'];
+    const menus = ['mainMenu', 'classMenu', 'skinsMenu', 'clothesMenu', 'auraMenu', 'inventoryMenu', 'abilitiesMenu', 'upgradeMenu', 'settingsMenu', 'pauseMenu', 'gameOver'];
     menus.forEach(m => document.getElementById(m)?.classList.add('hidden'));
     document.getElementById(menuId)?.classList.remove('hidden');
+    if (menuId === 'inventoryMenu') populateInventory();
+    if (menuId === 'auraMenu') updateAuraMenu();
     updateCoinDisplays();
 };
 
@@ -99,6 +277,7 @@ window.buyAbility = function(type) {
         coins -= 1000;
         unlockedAbilities.push(type);
         activeAbility = type;
+        saveUpgrades();
         const btn = document.querySelector(`#ability-${type.toLowerCase()} .btn`);
         if (btn) btn.innerText = "EQUIPPED";
         updateCoinDisplays();
@@ -106,6 +285,7 @@ window.buyAbility = function(type) {
         document.getElementById('abilityNameDisplay').innerText = type + " READY";
     } else if (unlockedAbilities.includes(type)) {
         activeAbility = type;
+        saveUpgrades();
         document.getElementById('abilityNameDisplay').innerText = type + " READY";
     }
 };
@@ -228,7 +408,18 @@ class Player {
             abilityCooldown--;
             document.getElementById('abilityCooldownFill').style.width = (abilityCooldown / ABILITY_COOLDOWN_MAX * 100) + '%';
         }
-        
+        if (auraCooldown > 0) {
+            auraCooldown--;
+            updateAuraCooldownDisplay();
+        }
+        if (equippedAura === 'armor') {
+            enemies.forEach(e => {
+                if (Math.hypot(e.x - this.x, e.y - this.y) < e.radius + 70) {
+                    e.hp -= 0.25;
+                    spawnParticles(e.x, e.y, '#6ee7b7', 1);
+                }
+            });
+        }
         if(dashCooldown > 0) dashCooldown--;
 
         document.getElementById('hpFill').style.width = Math.max(0, (this.hp/this.maxHp)*100) + '%';
@@ -366,6 +557,12 @@ window.startGame = function() {
     document.getElementById('gameHud').classList.remove('hidden'); document.getElementById('waveHud').classList.remove('hidden');
     document.getElementById('touchControls').classList.remove('hidden'); document.getElementById('pauseBtn').classList.remove('hidden');
     if(activeAbility) document.getElementById('abilityHud').classList.remove('hidden');
+    if(equippedAura) {
+        document.getElementById('auraHud').classList.remove('hidden');
+        updateAuraCooldownDisplay();
+    } else {
+        document.getElementById('auraHud').classList.add('hidden');
+    }
     canvas.style.display = 'block';
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     player = new Player(); enemies = []; projectiles = []; enemyProjectiles = []; particles = []; wave = 1;
@@ -399,12 +596,23 @@ function animate() {
     if(!isPaused) { projectiles = projectiles.filter(p => p.life > 0); enemyProjectiles = enemyProjectiles.filter(p => p.life > 0); }
     [...projectiles, ...enemyProjectiles].forEach(p => { p.update(); p.draw(); });
 
+    if (movingAuraActive > 0) {
+        const target = { x: mouse.x, y: mouse.y };
+        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 6; ctx.globalAlpha = 0.45;
+        ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(target.x, target.y); ctx.stroke();
+        ctx.globalAlpha = 1;
+        movingAuraActive--;
+    }
+
     enemies.forEach((e, i) => {
         e.update();
         e.draw();
         if(e.hp <= 0) {
-            // UPDATED REWARD LOGIC
             coins += e.reward;
+            if (e.isBoss || e.isMirror) {
+                availableAuraChests++;
+                saveUpgrades();
+            }
             updateCoinDisplays();
             spawnParticles(e.x,e.y,e.color,10);
             enemies.splice(i,1);
