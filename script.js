@@ -20,8 +20,10 @@ let equippedClothes = null;
 let availableAuraChests = 0;
 let ownedAuras = { moving: false, armor: false, aimbot: false };
 let equippedAura = null;
+let auraEnabled = false;
 let auraCooldown = 0;
 let movingAuraActive = 0;
+let movingAuraPulse = 0;
 
 function loadUpgrades() {
     healthUpgrades = Number(localStorage.getItem('carmCombatHealthUpgrades')) || 0;
@@ -45,6 +47,7 @@ function loadUpgrades() {
     ownedAuras.armor = localStorage.getItem('carmCombatAuraArmor') === 'true';
     ownedAuras.aimbot = localStorage.getItem('carmCombatAuraAimbot') === 'true';
     equippedAura = localStorage.getItem('carmCombatEquippedAura') || null;
+    auraEnabled = localStorage.getItem('carmCombatAuraEnabled') === 'true';
 }
 
 function saveUpgrades() {
@@ -69,6 +72,7 @@ function saveUpgrades() {
     localStorage.setItem('carmCombatAuraArmor', ownedAuras.armor);
     localStorage.setItem('carmCombatAuraAimbot', ownedAuras.aimbot);
     localStorage.setItem('carmCombatEquippedAura', equippedAura);
+    localStorage.setItem('carmCombatAuraEnabled', auraEnabled);
 }
 
 let gameState = 'MENU', isPaused = false, selectedClass = 'GUNMAN', player, enemies = [], projectiles = [], enemyProjectiles = [], particles = [], wave = 1, coins = loadCoins(), keys = {}, mouse = {x:0,y:0}, moveData = {active:false,dx:0,dy:0}, aimData = {active:false,dx:0,dy:0}, isFiring = false, shake = 0, animationId, waveActive = false;
@@ -179,9 +183,30 @@ function equipAura(type) {
         return alert('This aura is locked. Open more boss chests first.');
     }
     equippedAura = type;
+    auraEnabled = true;
     saveUpgrades();
     updateAuraMenu();
+    updateAuraCooldownDisplay();
+    if (document.getElementById('auraButton')) {
+        document.getElementById('auraButton').innerText = 'AURA ON';
+    }
     alert(`Equipped ${getHumanAuraName(type)}.`);
+}
+
+function setAuraEnabled(value) {
+    auraEnabled = value;
+    saveUpgrades();
+    updateAuraCooldownDisplay();
+    if (document.getElementById('auraButton')) {
+        document.getElementById('auraButton').innerText = auraEnabled ? 'AURA ON' : 'AURA OFF';
+    }
+}
+
+function toggleAuraEnabled() {
+    if (!equippedAura) {
+        return alert('No aura equipped. Equip one in Inventory or Aura menu.');
+    }
+    setAuraEnabled(!auraEnabled);
 }
 
 function equipAbility(type) {
@@ -197,44 +222,32 @@ function updateAuraCooldownDisplay() {
     const text = document.getElementById('auraCooldownText');
     if (!equippedAura) {
         text.innerText = 'No aura equipped';
-    } else if (auraCooldown > 0) {
-        text.innerText = `Ready in ${(auraCooldown/60).toFixed(1)}s`;
+    } else if (!auraEnabled) {
+        text.innerText = 'Aura OFF';
+    } else if (equippedAura === 'aimbot' && auraCooldown > 0) {
+        text.innerText = `Aim Bot ready in ${(auraCooldown/60).toFixed(1)}s`;
     } else {
-        text.innerText = `${getHumanAuraName(equippedAura)} ready`;
+        text.innerText = `${getHumanAuraName(equippedAura)} ON`;
     }
 }
 
 function activateAura() {
-    if (!equippedAura) {
-        return alert('No aura equipped. Equip one in Inventory or Aura menu.');
+    toggleAuraEnabled();
+}
+
+function getAuraTarget() {
+    if (!enemies.length) return null;
+    const mouseTarget = enemies.reduce((best, enemy) => {
+        const d = Math.hypot(enemy.x - mouse.x, enemy.y - mouse.y);
+        return (!best || d < best.d) ? { enemy, d } : best;
+    }, null);
+    if (mouseTarget && mouseTarget.d <= 220) {
+        return mouseTarget.enemy;
     }
-    if (equippedAura === 'armor') {
-        if (auraCooldown > 0) {
-            return alert(`Armor aura is passive and ready.`);
-        }
-        alert('Armor aura is passive. It will damage nearby enemies automatically.');
-        return;
-    }
-    if (auraCooldown > 0) {
-        return alert(`Aura is cooling down for ${(auraCooldown/60).toFixed(1)}s.`);
-    }
-    if (equippedAura === 'moving') {
-        movingAuraActive = 14;
-        const target = { x: mouse.x, y: mouse.y };
-        enemies.forEach(e => {
-            if (distToSeg({ x: e.x, y: e.y }, { x: player.x, y: player.y }, target) < e.radius + 10) {
-                e.hp -= 35;
-                spawnParticles(e.x, e.y, '#00ffff', 8);
-            }
-        });
-        auraCooldown = 120;
-        updateAuraCooldownDisplay();
-    } else if (equippedAura === 'aimbot') {
-        const angle = Math.atan2(mouse.y - player.y, mouse.x - player.x);
-        projectiles.push(new Projectile(player.x, player.y, angle, true, '#ffff80'));
-        auraCooldown = 120;
-        updateAuraCooldownDisplay();
-    }
+    return enemies.reduce((best, enemy) => {
+        const d = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+        return (!best || d < best.d) ? { enemy, d } : best;
+    }, null)?.enemy;
 }
 
 
@@ -412,10 +425,10 @@ class Player {
             auraCooldown--;
             updateAuraCooldownDisplay();
         }
-        if (equippedAura === 'armor') {
+        if (equippedAura === 'armor' && auraEnabled) {
             enemies.forEach(e => {
-                if (Math.hypot(e.x - this.x, e.y - this.y) < e.radius + 70) {
-                    e.hp -= 0.25;
+                if (Math.hypot(e.x - this.x, e.y - this.y) < e.radius + 110) {
+                    e.hp -= 0.7;
                     spawnParticles(e.x, e.y, '#6ee7b7', 1);
                 }
             });
@@ -534,13 +547,69 @@ class Enemy {
 }
 
 class Projectile {
-    constructor(x, y, a, f, c) { this.x=x; this.y=y; this.f=f; this.c=c; this.vx=Math.cos(a)*(f?20:7); this.vy=Math.sin(a)*(f?20:7); this.life=100; }
-    draw() { ctx.fillStyle=this.c; ctx.beginPath(); ctx.arc(this.x, this.y, this.f?7:5, 0, Math.PI*2); ctx.fill(); }
+    constructor(x, y, a, f, c, radius = null, damage = null, speed = null, splash = null) {
+        this.x = x; this.y = y; this.f = f; this.c = c;
+        this.radius = radius ?? (f ? 12 : 5);
+        this.damage = damage ?? (f ? 40 : 12);
+        this.vx = Math.cos(a) * (speed ?? (f ? 18 : 7));
+        this.vy = Math.sin(a) * (speed ?? (f ? 18 : 7));
+        this.life = 120;
+        this.splash = splash ?? (f ? 45 : 0);
+    }
+    draw() { ctx.fillStyle = this.c; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI*2); ctx.fill(); }
     update() {
         if(isPaused) return;
         this.x += this.vx; this.y += this.vy; this.life--;
-        if(this.f) { enemies.forEach(e => { if(Math.hypot(this.x-e.x, this.y-e.y) < e.radius+10) { e.hp -= 20; this.life=0; } }); }
-        else if(Math.hypot(this.x-player.x, this.y-player.y) < 25) { player.hp -= 12; this.life=0; shake=5; }
+        if(this.f) {
+            enemies.forEach(e => {
+                if(Math.hypot(this.x - e.x, this.y - e.y) < e.radius + this.radius) {
+                    e.hp -= this.damage;
+                    if (this.splash > 0) {
+                        enemies.forEach(follow => {
+                            if (follow !== e && Math.hypot(follow.x - e.x, follow.y - e.y) < this.splash) {
+                                follow.hp -= this.damage * 0.55;
+                            }
+                        });
+                        spawnParticles(e.x, e.y, this.c, 18);
+                    }
+                    this.life = 0;
+                }
+            });
+        } else if (Math.hypot(this.x - player.x, this.y - player.y) < 25) {
+            player.hp -= this.damage;
+            this.life = 0;
+            shake = 5;
+        }
+    }
+}
+
+function handleAuraEffects() {
+    if (!equippedAura || !auraEnabled || isPaused) return;
+
+    if (equippedAura === 'aimbot') {
+        if (auraCooldown <= 0 && enemies.length > 0) {
+            const target = getAuraTarget();
+            if (target) {
+                const angle = Math.atan2(target.y - player.y, target.x - player.x);
+                projectiles.push(new Projectile(player.x, player.y, angle, true, '#ffff80', 18, 55, 18, 100));
+                auraCooldown = 120;
+                updateAuraCooldownDisplay();
+            }
+        }
+    }
+
+    if (equippedAura === 'moving') {
+        movingAuraPulse--;
+        if (movingAuraPulse <= 0) {
+            movingAuraPulse = 6;
+            const target = { x: mouse.x, y: mouse.y };
+            enemies.forEach(e => {
+                if (distToSeg({ x: e.x, y: e.y }, { x: player.x, y: player.y }, target) < e.radius + 22) {
+                    e.hp -= 24;
+                    spawnParticles(e.x, e.y, '#ff0033', 10);
+                }
+            });
+        }
     }
 }
 
@@ -596,12 +665,16 @@ function animate() {
     if(!isPaused) { projectiles = projectiles.filter(p => p.life > 0); enemyProjectiles = enemyProjectiles.filter(p => p.life > 0); }
     [...projectiles, ...enemyProjectiles].forEach(p => { p.update(); p.draw(); });
 
-    if (movingAuraActive > 0) {
+    handleAuraEffects();
+
+    if (equippedAura === 'moving' && auraEnabled) {
         const target = { x: mouse.x, y: mouse.y };
-        ctx.strokeStyle = '#00ffff'; ctx.lineWidth = 6; ctx.globalAlpha = 0.45;
+        ctx.strokeStyle = '#ff3131'; ctx.lineWidth = 8; ctx.globalAlpha = 0.4;
         ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(target.x, target.y); ctx.stroke();
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = 'rgba(255, 50, 50, 0.75)';
+        ctx.beginPath(); ctx.arc(target.x, target.y, 28, 0, Math.PI*2); ctx.fill();
         ctx.globalAlpha = 1;
-        movingAuraActive--;
     }
 
     enemies.forEach((e, i) => {
@@ -647,6 +720,7 @@ function animate() {
 
 window.onkeydown = e => {
     keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'f') toggleAuraEnabled();
     if(e.key.toLowerCase() === 'p' || e.key === 'Escape') togglePause();
     if(e.code === 'Space') { e.preventDefault(); isDashTargeting = !isDashTargeting; }
     if(e.code === 'KeyQ') player.useAbility();
